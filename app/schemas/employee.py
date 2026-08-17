@@ -16,6 +16,17 @@ class Department(str, Enum):
     SALES = "Sales"
 
 
+class EmployeeSortField(str, Enum):
+    NAME = "name"
+    SALARY = "salary"
+    HIRE_DATE = "hire_date"
+
+
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+
 class EmployeeCreate(BaseModel):
     name: str = Field(min_length=2)
     lastname: str = Field(min_length=2)
@@ -26,6 +37,8 @@ class EmployeeCreate(BaseModel):
     department: Department
     hire_date: date
     phone: str | None = None
+
+
 class EmployeeUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2)
     lastname: str | None = Field(default=None, min_length=2)
@@ -35,6 +48,4 @@ class EmployeeUpdate(BaseModel):
     status: EmployeeStatus | None = None
     department: Department | None = None
     hire_date: date | None = None
-    department: Department | None
-    hire_date: date | None
     phone: str | None = None

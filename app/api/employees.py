@@ -2,7 +2,12 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from app.schemas.employee import EmployeeCreate, EmployeeUpdate
+from app.schemas.employee import (
+    EmployeeCreate,
+    EmployeeUpdate,
+    EmployeeSortField,
+    SortOrder,
+)
 from app.database.connection import get_db
 from app.models.employee import Employee
 
@@ -13,15 +18,14 @@ router = APIRouter(
 )
 
 
-
-
-
 # Get all employees from PostgreSQL
 @router.get("/")
 def get_employees(
     department: str | None = None,
     status: str | None = None,
     name: str | None = None,
+    sort_by: EmployeeSortField | None = None,
+    order: SortOrder = SortOrder.ASC,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(get_db)
@@ -29,17 +33,38 @@ def get_employees(
     query = db.query(Employee)
 
     if department:
-        query = query.filter(Employee.department.ilike(department))
+        query = query.filter(
+            Employee.department.ilike(department)
+        )
 
     if status:
-        query = query.filter(Employee.status.ilike(status))
+        query = query.filter(
+            Employee.status.ilike(status)
+        )
 
     if name:
-        query = query.filter(Employee.name.ilike(f"%{name}%"))
+        query = query.filter(
+            Employee.name.ilike(f"%{name}%")
+        )
+
+    allowed_sort_fields = {
+        "name": Employee.name,
+        "salary": Employee.salary,
+        "hire_date": Employee.hire_date
+    }
+
+    if sort_by:
+        sort_column = allowed_sort_fields[sort_by.value]
+
+        if order == SortOrder.DESC:
+            query = query.order_by(sort_column.desc())
+        else:
+            query = query.order_by(sort_column.asc())
 
     return query.offset(skip).limit(limit).all()
 
-# Get one employee from temporary database
+
+# Get one employee from PostgreSQL
 @router.get("/{employee_id}")
 def get_employee(
     employee_id: int,
@@ -109,9 +134,13 @@ def update_employee(
             detail="Employee not found"
         )
 
-    update_data = employee.model_dump(exclude_unset=True)
+    update_data = employee.model_dump(
+        exclude_unset=True
+    )
 
     for field, value in update_data.items():
+
+        # Convert Enum values to normal strings
         if hasattr(value, "value"):
             value = value.value
 
