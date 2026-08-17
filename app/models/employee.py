@@ -15,4 +15,4 @@ class Employee(Base):
     status = Column(String, nullable=False)
     department = Column(String, nullable=False)
     hire_date = Column(Date, nullable=False)
-    
+    phone = Column(String, nullable=True)

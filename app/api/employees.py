@@ -55,7 +55,8 @@ def create_employee(
         salary=employee.salary,
         status=employee.status.value,
         department=employee.department.value,
-        hire_date=employee.hire_date
+        hire_date=employee.hire_date,
+        phone=employee.phone
     )
 
     db.add(new_employee)

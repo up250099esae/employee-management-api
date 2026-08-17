@@ -25,6 +25,7 @@ class EmployeeCreate(BaseModel):
     status: EmployeeStatus
     department: Department
     hire_date: date
+    phone: str | None = None
 class EmployeeUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2)
     lastname: str | None = Field(default=None, min_length=2)
@@ -36,3 +37,4 @@ class EmployeeUpdate(BaseModel):
     hire_date: date | None = None
     department: Department | None
     hire_date: date | None
+    phone: str | None = None
