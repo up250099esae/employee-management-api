@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.schemas.employee import EmployeeCreate, EmployeeUpdate
 from app.database.connection import get_db
@@ -59,14 +60,23 @@ def create_employee(
         phone=employee.phone
     )
 
-    db.add(new_employee)
-    db.commit()
-    db.refresh(new_employee)
+    try:
+        db.add(new_employee)
+        db.commit()
+        db.refresh(new_employee)
+
+    except IntegrityError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail="An employee with this email already exists"
+        )
 
     return new_employee
 
 
-# Update employee in temporary database
+# Update employee in PostgreSQL
 @router.put("/{employee_id}")
 def update_employee(
     employee_id: int,
@@ -86,15 +96,27 @@ def update_employee(
     update_data = employee.model_dump(exclude_unset=True)
 
     for field, value in update_data.items():
+        if hasattr(value, "value"):
+            value = value.value
+
         setattr(existing_employee, field, value)
 
-    db.commit()
-    db.refresh(existing_employee)
+    try:
+        db.commit()
+        db.refresh(existing_employee)
+
+    except IntegrityError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail="An employee with this email already exists"
+        )
 
     return existing_employee
 
 
-# Delete employee from temporary database
+# Delete employee from PostgreSQL
 @router.delete("/{employee_id}")
 def delete_employee(
     employee_id: int,
