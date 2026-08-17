@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -18,10 +18,26 @@ router = APIRouter(
 
 # Get all employees from PostgreSQL
 @router.get("/")
-def get_employees(db: Session = Depends(get_db)):
-    database_employees = db.query(Employee).all()
-    return database_employees
+def get_employees(
+    department: str | None = None,
+    status: str | None = None,
+    name: str | None = None,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=10, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Employee)
 
+    if department:
+        query = query.filter(Employee.department.ilike(department))
+
+    if status:
+        query = query.filter(Employee.status.ilike(status))
+
+    if name:
+        query = query.filter(Employee.name.ilike(f"%{name}%"))
+
+    return query.offset(skip).limit(limit).all()
 
 # Get one employee from temporary database
 @router.get("/{employee_id}")
